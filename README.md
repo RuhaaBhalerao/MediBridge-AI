@@ -53,7 +53,8 @@ The application pairs a responsive React frontend with a Node.js backend, commun
 <img width="491" height="398" alt="Screenshot 2026-06-07 204453" src="https://github.com/user-attachments/assets/4b07e5d8-c4f4-45c6-8c7b-595ee15f687c" />
 
 
-<img width="957" height="468" alt="Screenshot 2026-06-07 225043" src="https://github.com/user-attachments/assets/167659e8-8bb1-4bd8-8259-41a47dcd24a8" />
+<img width="493" height="322" alt="image" src="https://github.com/user-attachments/assets/a68e4836-2aca-4d8d-ad24-1de75a1b9f98" />
+
 
 
 
