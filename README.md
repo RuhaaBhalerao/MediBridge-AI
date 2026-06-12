@@ -7,7 +7,7 @@
 ### An AI-powered health & wellness chatbot for smarter, accessible healthcare guidance
 
 </div>
----
+
 Problem
 
 Medical billing and insurance policies are often difficult for patients to understand.
@@ -22,24 +22,24 @@ Making financially informed healthcare decisions
 
 As a result, many patients face unexpected medical expenses despite having insurance.
 
-## 📖 Overview
+##  Overview
 
 **MediBridge AI** is a full-stack intelligent health assistant that bridges the gap between users and healthcare information. It delivers personalized health guidance, answers medical questions in plain language, and helps users make informed decisions about their well-being — all through a clean, conversational interface.
 
 The application pairs a responsive React frontend with a Node.js backend, communicating with an AI language model to handle health-related queries with accuracy and empathy.
 
-> ⚠️ **Disclaimer:** MediBridge AI provides informational guidance only. It is not a substitute for professional medical advice, diagnosis, or treatment.
+>  **Disclaimer:** MediBridge AI provides informational guidance only. It is not a substitute for professional medical advice, diagnosis, or treatment.
 
 ---
 
 ##  Features
 
-- ** AI-Powered Chat** — Conversational health assistant powered by a large language model, capable of answering symptom queries, wellness tips, and general medical FAQs
-- ** Natural Language Interface** — Ask questions in plain English; no medical jargon required
-- ** Real-Time Responses** — Streaming or near-instant reply generation for a smooth chat experience
-- ** Clean, Focused UI** — Minimal and accessible design optimized for health conversations
-- ** Full-Stack Architecture** — Decoupled React frontend + Express/Node.js API server
-- ** Cloud Deployed** — Hosted on Vercel for high availability and fast global delivery
+-  AI-Powered Chat — Conversational health assistant powered by a large language model, capable of answering symptom queries, wellness tips, and general medical FAQs
+- Natural Language Interface — Ask questions in plain English; no medical jargon required
+- Real-Time Responses — Streaming or near-instant reply generation for a smooth chat experience
+- Clean, Focused UI — Minimal and accessible design optimized for health conversations
+- Full-Stack Architecture — Decoupled React frontend + Express/Node.js API server
+- Cloud Deployed — Hosted on Vercel for high availability and fast global delivery
 
 ---
 
@@ -48,14 +48,20 @@ The application pairs a responsive React frontend with a Node.js backend, commun
 > _Add screenshots of your app here by placing images in a `/docs/screenshots/` folder and updating the paths below._
 <img width="285" height="329" alt="image" src="https://github.com/user-attachments/assets/10395d36-74bb-4f83-994d-53c7d7ccb427" />
 
+
+
 <img width="491" height="398" alt="Screenshot 2026-06-07 204453" src="https://github.com/user-attachments/assets/4b07e5d8-c4f4-45c6-8c7b-595ee15f687c" />
+
+
 <img width="957" height="468" alt="Screenshot 2026-06-07 225043" src="https://github.com/user-attachments/assets/167659e8-8bb1-4bd8-8259-41a47dcd24a8" />
+
+
 
 
 
 ---
 
-## 🏗️ Architecture
+##  Architecture
 
 ```
 MediBridge-AI/
