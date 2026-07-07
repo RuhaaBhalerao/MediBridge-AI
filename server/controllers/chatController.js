@@ -24,7 +24,6 @@ export const chatWithMediBridge = async (req, res) => {
 
     res.json({
       reply: result.reply,
-      usedFallback: result.usedFallback,
     });
   } catch (error) {
     console.error("chatWithMediBridge failed:", {

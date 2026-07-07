@@ -1,236 +1,65 @@
-export const getMediBridgeSystemPrompt = async () => {
-	const mod = await import("../config/systemPrompt.js");
-	return mod.MEDIBRIDGE_SYSTEM_PROMPT;
+import { MEDIBRIDGE_SYSTEM_PROMPT } from "../config/systemPrompt.js";
+
+const OPENROUTER_CHAT_URL = "https://openrouter.ai/api/v1/chat/completions";
+const DEFAULT_MODEL = process.env.OPENROUTER_MODEL || "google/gemma-3-27b-it:free";
+
+export const getMediBridgeSystemPrompt = async () => MEDIBRIDGE_SYSTEM_PROMPT;
+
+const buildStrictSystemPrompt = ({ message, context = {} }) => {
+	const policyText = context.policyText || "Not provided";
+	const estimateText = context.estimateText || "Not provided";
+
+	return [
+		MEDIBRIDGE_SYSTEM_PROMPT.trim(),
+		"",
+		"Hard Rules For Document-Based Analysis:",
+		"- Analyze ONLY the provided insurance policy and hospital estimate.",
+		"- Do not assume coverage.",
+		"- Do not invent policy clauses, exclusions, limits, deductibles, co-payments, or benefits.",
+		"- If the answer cannot be determined from the provided text, explicitly say: \"Cannot determine from the provided documents.\"",
+		"- Clearly distinguish between covered expenses, partially covered expenses, not covered expenses, and unknown or unclear expenses.",
+		"- When calculating costs, show the values used for the calculation.",
+		"- Clearly label estimated values as estimates.",
+		"- Mention the relevant policy condition when making a coverage conclusion.",
+		"- Never provide medical advice.",
+		"- Never claim that the result is an official insurer decision.",
+		"- State that the analysis is based only on the documents provided by the user.",
+		"",
+		"Insurance Policy:",
+		policyText,
+		"",
+		"Hospital Estimate:",
+		estimateText,
+		"",
+		"User Question:",
+		message,
+	].join("\n");
 };
 
-const normalizeClaimValue = (value) => {
-	if (Array.isArray(value)) {
-		return value.length ? value.map(normalizeClaimValue).join(", ") : "Not provided";
+const mapOpenRouterError = (status) => {
+	if (status === 401) {
+		return "OpenRouter authentication failed (401). Check OPENROUTER_API_KEY.";
 	}
 
-	if (value instanceof Date) {
-		return value.toISOString();
+	if (status === 402) {
+		return "OpenRouter request failed due to insufficient credits or payment required (402).";
 	}
 
-	if (value === null || value === undefined || value === "") {
-		return "Not provided";
+	if (status === 429) {
+		return "OpenRouter rate limit reached (429). Please retry shortly.";
 	}
 
-	if (typeof value === "object") {
-		return JSON.stringify(value);
+	if (status >= 500) {
+		return "OpenRouter/provider is currently unavailable (5xx). Please retry later.";
 	}
 
-	return String(value);
-};
-
-
-
-
-const GEMINI_MODELS = [
-  "gemini-2.5-flash",
-  "gemini-1.5-flash",
-  "gemini-1.5-flash-8b",
-];;
-
-const callGeminiWithModel = async ({ model, message, history = [], context = {}, promptText = "" }) => {
-	const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
-	if (!GEMINI_API_KEY) {
-		console.log("callGemini: no GEMINI_API_KEY present");
-		return null;
-	}
-
-	if (promptText) {
-		console.log("callGemini: using model", model);
-		const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(GEMINI_API_KEY)}`;
-
-		const body = {
-			contents: [
-				{
-					role: "user",
-					parts: [{ text: promptText }],
-				},
-			],
-			generationConfig: {
-				maxOutputTokens: 800,
-				temperature: 0.2,
-		},
-		};
-
-		const resp = await fetch(url, {
-			method: "POST",
-			headers: {
-				"Content-Type": "application/json",
-			},
-			body: JSON.stringify(body),
-		});
-
-		if (!resp.ok) {
-			const txt = await resp.text();
-			console.error("Gemini HTTP error:", resp.status, txt);
-			throw new Error(`Gemini request failed: ${resp.status} ${txt}`);
-		}
-
-		const data = await resp.json();
-		const candidate = data?.candidates?.[0]?.content?.parts?.map((part) => part?.text || "").join("") || data?.candidates?.[0]?.content || data?.output?.[0]?.content || data?.outputs?.[0]?.content?.text || data?.output_text;
-		console.log("Gemini response raw:", Object.keys(data || {}).join(","));
-		if (typeof candidate === "string") {
-			console.log("Gemini candidate (truncated):", candidate.slice(0, 200));
-			return candidate.trim();
-		}
-
-		if (data?.candidates && data.candidates.length) return JSON.stringify(data.candidates[0]);
-		return null;
-	}
-
-	console.log("callGemini: using model", model);
-
-	
-	
-	const promptParts = [systemPrompt];
-	if (contextMessage) promptParts.push(`Context:\n${contextMessage}`);
-	if (Array.isArray(history) && history.length) {
-		const recent = history
-			.slice(-8)
-			.map((h) => `${h.role || "user"}: ${h.content}`)
-			.join("\n");
-		promptParts.push(`Conversation history:\n${recent}`);
-	}
-	promptParts.push(`User: ${message}`);
-
-	const generatedPromptText = promptParts.join("\n\n");
-
-	const url = `https://generativelanguage.googleapis.com/v1beta2/models/${model}:generateText`;
-
-	const body = {
-		prompt: { text: generatedPromptText },
-		temperature: 0.3,
-		maxOutputTokens: 800,
-	};
-
-	const resp = await fetch(url, {
-		method: "POST",
-		headers: {
-			"Content-Type": "application/json",
-			Authorization: `Bearer ${GEMINI_API_KEY}`,
-		},
-		body: JSON.stringify(body),
-	});
-
-	if (!resp.ok) {
-		const txt = await resp.text();
-		console.error("Gemini HTTP error:", resp.status, txt);
-		throw new Error(`Gemini request failed: ${resp.status} ${txt}`);
-	}
-
-	const data = await resp.json();
-
-	// Try common response shapes
-	const candidate = data?.candidates?.[0]?.content || data?.output?.[0]?.content || data?.outputs?.[0]?.content?.text || data?.output_text;
-	console.log("Gemini response raw:", Object.keys(data || {}).join(","));
-	if (typeof candidate === "string") {
-		console.log("Gemini candidate (truncated):", candidate.slice(0, 200));
-		return candidate.trim();
-	}
-
-	// Fallback: attempt to stringify useful fields
-	if (data?.candidates && data.candidates.length) return JSON.stringify(data.candidates[0]);
-	return null;
-};
-
-const callGemini = async ({ message, history = [], context = {}, promptText = "" }) => {
-	for (const model of GEMINI_MODELS) {
-		try {
-			const reply = await callGeminiWithModel({
-				model,
-				message,
-				history,
-				context,
-				promptText,
-			});
-
-			if (reply) {
-				return reply;
-			}
-		} catch (error) {
-			const errorMessage = error?.message || "";
-			if (!errorMessage.includes("503") || model === GEMINI_MODELS[GEMINI_MODELS.length - 1]) {
-				throw error;
-			}
-
-			console.warn(`Gemini model ${model} returned 503, trying next model`);
-		}
-	}
-
-	return null;
-};
-
-const OPENAI_CHAT_URL = "https://api.openai.com/v1/chat/completions";
-const DEFAULT_MODEL = process.env.OPENAI_MODEL || "gpt-4o-mini";
-
-const normalizeHistory = (history = []) =>
-	history
-		.filter((entry) => entry && typeof entry.content === "string")
-		.slice(-8)
-		.map((entry) => ({
-			role: ["system", "assistant", "user"].includes(entry.role) ? entry.role : "user",
-			content: entry.content.trim(),
-		}));
-
-const buildContextMessage = (context = {}) => {
-	const sections = [];
-
-	if (context.policyText) {
-		sections.push(`Insurance policy:\n${context.policyText}`);
-	}
-
-	if (context.estimateText) {
-		sections.push(`Hospital estimate:\n${context.estimateText}`);
-	}
-
-	if (context.analysisSummary) {
-		sections.push(`Current analysis summary:\n${context.analysisSummary}`);
-	}
-
-	if (context.coverageAmount || context.patientResponsibility || context.patientPays || context.confidenceScore || context.confidence) {
-		sections.push(
-			[
-				context.coverageAmount ? `Estimated coverage: ${context.coverageAmount}` : null,
-				context.patientResponsibility ? `Estimated patient payment: ${context.patientResponsibility}` : context.patientPays ? `Estimated patient payment: ${context.patientPays}` : null,
-				context.confidenceScore ? `Coverage confidence: ${context.confidenceScore}` : context.confidence ? `Coverage confidence: ${context.confidence}` : null,
-			]
-				.filter(Boolean)
-				.join("\n")
-		);
-	}
-
-	return sections.filter(Boolean).join("\n\n");
-};
-
-const buildFallbackReply = ({ message, context }) => {
-	const contextMessage = buildContextMessage(context);
-
-	if (contextMessage) {
-		return [
-			"I can help explain the available coverage information, but I am not connected to the live AI model right now.",
-			"",
-			"Relevant context:",
-			contextMessage,
-			"",
-			"If you want, I can still help you break this down into coverage, personal payment, exclusions, and next steps.",
-		].join("\n");
-	}
-
-	if (message.toLowerCase().includes("claim")) {
-		return "I can help with claim steps, required documents, and what to upload. If you share the policy or estimate details, I can explain the likely process in simple terms.";
-	}
-
-	return "I can help explain insurance coverage, hospital estimates, out-of-pocket costs, and claim steps. Share your policy or estimate details, and I will guide you in simple language.";
+	return `OpenRouter request failed with status ${status}.`;
 };
 
 export const generateMediBridgeResponse = async ({
-  message,
-  history = [],
-  context = {},
+	message,
+	history = [],
+	context = {},
 }) => {
 	const trimmedMessage = (message || "").trim();
 
@@ -238,104 +67,83 @@ export const generateMediBridgeResponse = async ({
 		throw new Error("Message is required");
 	}
 
-	const promptText = `
-You are MediBridge AI.
-
-Insurance Policy:
-${context.policyText || "Not provided"}
-
-Hospital Estimate:
-${context.estimateText || "Not provided"}
-
-User Question:
-${trimmedMessage}
-
-Rules:
-- Answer ONLY from the policy and estimate.
-- Do not invent coverage.
-- Do not use outside knowledge.
-- If information is missing, say:
-"This information is not available in the provided policy or estimate."
-`;
-
-	// If Gemini is configured prefer it; otherwise use OpenAI. If neither is available, return fallback.
-	console.log("generateMediBridgeResponse: GEMINI key present?", !!process.env.GEMINI_API_KEY, "OPENAI key present?", !!process.env.OPENAI_API_KEY);
-	if (!process.env.GEMINI_API_KEY && !process.env.OPENAI_API_KEY) {
-		return {
-			reply: buildFallbackReply({
-  message: trimmedMessage,
-  context,
-}),
-		};
-	}
-
-	
-
-	const messages = [
-  {
-    role: "system",
-    content: promptText,
-  },
-  {
-    role: "user",
-    content: trimmedMessage,
-  },
-];
-
-	// Try Gemini first when configured
-	if (process.env.GEMINI_API_KEY) {
-		try {
-			const gReply = await callGemini({
-				message: trimmedMessage,
-				history,
-				context,
-				promptText,
-			});
-			if (gReply) {
-				return { reply: gReply, usedFallback: false, provider: "gemini" };
-			}
-		} catch (gErr) {
-			console.error("Gemini call failed, falling back to OpenAI:", gErr);
-		}
-	}
-
-	// Fall back to OpenAI if configured
-	const apiKey = process.env.OPENAI_API_KEY;
+	const apiKey = process.env.OPENROUTER_API_KEY;
 	if (!apiKey) {
-		return {
-			reply: buildFallbackReply({ message: trimmedMessage, context }),
-			usedFallback: true,
-		};
+		throw new Error("OPENROUTER_API_KEY is missing in environment configuration.");
 	}
 
-	const response = await fetch(OPENAI_CHAT_URL, {
-		method: "POST",
-		headers: {
-			"Content-Type": "application/json",
-			Authorization: `Bearer ${apiKey}`,
-		},
-		body: JSON.stringify({
-			model: DEFAULT_MODEL,
-			temperature: 0.3,
-			messages,
-		}),
+	const model = process.env.OPENROUTER_MODEL || DEFAULT_MODEL;
+	const systemPrompt = buildStrictSystemPrompt({
+		message: trimmedMessage,
+		context,
 	});
 
-	if (!response.ok) {
-		const errorText = await response.text();
-		throw new Error(`OpenAI request failed: ${response.status} ${errorText}`);
+	const messages = [
+		{
+			role: "system",
+			content: systemPrompt,
+		},
+		{
+			role: "user",
+			content: trimmedMessage,
+		},
+	];
+
+	try {
+		console.log(`[OpenRouter] model=${model}`);
+
+		const response = await fetch(OPENROUTER_CHAT_URL, {
+			method: "POST",
+			headers: {
+				Authorization: `Bearer ${apiKey}`,
+				"Content-Type": "application/json",
+			},
+			body: JSON.stringify({
+				model,
+				messages,
+				temperature: 0.2,
+			}),
+		});
+
+		console.log(`[OpenRouter] status=${response.status}`);
+
+		if (!response.ok) {
+			let upstreamMessage = "";
+			try {
+				const errJson = await response.json();
+				upstreamMessage = errJson?.error?.message || "";
+			} catch {
+				upstreamMessage = "";
+			}
+
+			const mappedMessage = mapOpenRouterError(response.status);
+			const fullMessage = upstreamMessage
+				? `${mappedMessage} ${upstreamMessage}`
+				: mappedMessage;
+
+			console.error("[OpenRouter] error:", fullMessage);
+			throw new Error(fullMessage);
+		}
+
+		const data = await response.json();
+		const reply = data?.choices?.[0]?.message?.content?.trim();
+
+		if (!reply) {
+			const message = "OpenRouter returned an invalid or empty response.";
+			console.error("[OpenRouter] error:", message);
+			throw new Error(message);
+		}
+
+		return {
+			reply,
+		};
+	} catch (error) {
+		if (error instanceof Error) {
+			console.error("[OpenRouter] request failed:", error.message);
+			throw error;
+		}
+
+		console.error("[OpenRouter] request failed: unknown network error");
+		throw new Error("Network error while calling OpenRouter.");
 	}
-
-	const data = await response.json();
-	const reply = data?.choices?.[0]?.message?.content?.trim();
-
-	if (!reply) {
-		throw new Error("OpenAI returned an empty response");
-	}
-
-	return {
-		reply,
-		usedFallback: false,
-		provider: "openai",
-	};
 };
