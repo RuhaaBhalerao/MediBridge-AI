@@ -42,6 +42,19 @@ textarea {
   margin: 0 auto;
 }
 
+.layout.chat-expanded {
+  grid-template-columns: 1fr;
+  max-width: 1280px;
+}
+
+.layout.chat-expanded .hero-panel {
+  display: none;
+}
+
+.layout.chat-expanded .chat-panel {
+  grid-column: 1 / -1;
+}
+
 .hero-panel,
 .chat-panel {
   background: rgba(7, 19, 26, 0.72);
@@ -247,6 +260,10 @@ textarea {
   padding: 24px;
 }
 
+.layout.chat-expanded .chat-panel {
+  min-height: calc(100vh - 48px);
+}
+
 .eyebrow,
 .panel-label {
   margin: 0 0 10px;
@@ -330,6 +347,12 @@ textarea:focus {
   margin-bottom: 18px;
 }
 
+.chat-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
 .status-pill {
   padding: 8px 12px;
   border-radius: 999px;
@@ -340,6 +363,36 @@ textarea:focus {
 .status-pill.ready {
   color: #8ed9c5;
   background: rgba(42, 106, 89, 0.24);
+}
+
+.chat-expand-button {
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  border-radius: 12px;
+  border: 1px solid rgba(134, 180, 201, 0.18);
+  background: rgba(255, 255, 255, 0.04);
+  color: #e6f0f4;
+  cursor: pointer;
+  transition: transform 0.16s ease, border-color 0.16s ease, background 0.16s ease, box-shadow 0.16s ease;
+}
+
+.chat-expand-button:hover {
+  transform: translateY(-1px);
+  border-color: rgba(103, 214, 183, 0.4);
+  background: rgba(103, 214, 183, 0.12);
+}
+
+.chat-expand-button:focus-visible {
+  outline: none;
+  border-color: #67d6b7;
+  box-shadow: 0 0 0 3px rgba(103, 214, 183, 0.14);
+}
+
+.chat-expand-button span {
+  font-size: 1rem;
+  line-height: 1;
 }
 
 .status-pill.busy {
@@ -449,6 +502,10 @@ textarea:disabled {
     grid-template-columns: 1fr;
   }
 
+  .layout.chat-expanded {
+    grid-template-columns: 1fr;
+  }
+
   .chat-panel {
     min-height: auto;
   }
@@ -494,5 +551,9 @@ textarea:disabled {
 
   .composer button {
     width: 100%;
+  }
+
+  .chat-expand-button {
+    display: none;
   }
 }

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { sendChatMessage } from "./services/api.jsx";
 
 const starterMessages = [
@@ -28,6 +28,25 @@ function App() {
   const [isSending, setIsSending] = useState(false);
 
   const [error, setError] = useState("");
+  const [isChatExpanded, setIsChatExpanded] = useState(false);
+
+  useEffect(() => {
+    if (!isChatExpanded) {
+      return undefined;
+    }
+
+    const handleKeyDown = (event) => {
+      if (event.key === "Escape") {
+        setIsChatExpanded(false);
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [isChatExpanded]);
 
   const handleSend = async (messageText = input) => {
     const trimmed = messageText.trim();
@@ -83,7 +102,7 @@ function App() {
 
   return (
     <div className="app-shell">
-      <main className="layout">
+      <main className={`layout${isChatExpanded ? " chat-expanded" : ""}`}>
 
         <section className="hero-panel">
 
@@ -140,9 +159,23 @@ function App() {
               <h2>Ask MediBridge AI</h2>
             </div>
 
-            <span className="status-pill ready">
-              Ready
-            </span>
+            <div className="chat-header-actions">
+              <span className="status-pill ready">
+                Ready
+              </span>
+
+              <button
+                type="button"
+                className="chat-expand-button"
+                onClick={() => setIsChatExpanded((current) => !current)}
+                aria-label={isChatExpanded ? "Collapse chat" : "Expand chat"}
+                title={isChatExpanded ? "Collapse chat" : "Expand chat"}
+              >
+                <span aria-hidden="true">
+                  {isChatExpanded ? "⤡" : "⤢"}
+                </span>
+              </button>
+            </div>
           </div>
 
           <div className="message-stream">
