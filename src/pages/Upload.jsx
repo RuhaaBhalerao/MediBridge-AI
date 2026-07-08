@@ -2,13 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { sendChatMessage, uploadClaimDocuments } from "../services/api.jsx";
 
 const CLAIM_SESSION_KEY = "medibridgeClaimSession";
-
-const quickPrompts = [
-  "Will my surgery be covered?",
-  "How much will I have to pay?",
-  "Are there any exclusions?",
-  "Is the waiting period completed?",
-];
+const DOCUMENTS_READY_MESSAGE = "Documents processed. Ask me anything about your coverage.";
 
 const getStoredClaimSession = () => {
   if (typeof window === "undefined") {
@@ -30,24 +24,22 @@ const getStoredClaimSession = () => {
   }
 };
 
-const createStarterMessages = (hasClaim) => [
-  {
-    role: "assistant",
-    content: hasClaim
-      ? "Your documents are ready. Ask me anything about coverage, exclusions, limits, or out-of-pocket costs."
-      : "Upload your insurance policy PDF and hospital estimate PDF to create a claim session, then ask me questions about coverage and costs.",
-  },
-];
+const createInitialMessages = (hasClaim) =>
+  hasClaim
+    ? [
+        {
+          role: "system",
+          content: DOCUMENTS_READY_MESSAGE,
+        },
+      ]
+    : [];
 
 const isPdfFile = (file) => {
   if (!file) {
     return false;
   }
 
-  return (
-    file.type === "application/pdf" ||
-    file.name.toLowerCase().endsWith(".pdf")
-  );
+  return file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf");
 };
 
 const formatFileSize = (sizeInBytes) => {
@@ -69,7 +61,7 @@ function Upload() {
   const initialClaimSession = getStoredClaimSession();
 
   const [messages, setMessages] = useState(() =>
-    createStarterMessages(Boolean(initialClaimSession?.claimId))
+    createInitialMessages(Boolean(initialClaimSession?.claimId))
   );
   const [input, setInput] = useState("");
   const [isSending, setIsSending] = useState(false);
@@ -97,10 +89,7 @@ function Upload() {
     }
 
     if (claimSession?.claimId) {
-      window.localStorage.setItem(
-        CLAIM_SESSION_KEY,
-        JSON.stringify(claimSession)
-      );
+      window.localStorage.setItem(CLAIM_SESSION_KEY, JSON.stringify(claimSession));
     } else {
       window.localStorage.removeItem(CLAIM_SESSION_KEY);
     }
@@ -203,21 +192,20 @@ function Upload() {
       };
 
       setClaimSession(nextClaimSession);
-      setUploadSuccess(
-        "Documents processed successfully. You can now ask MediBridge questions about your coverage."
-      );
-      setMessages((currentMessages) => [
-        ...currentMessages,
-        {
-          role: "assistant",
-          content:
-            "Documents processed successfully. You can now ask MediBridge questions about your coverage.",
-        },
-      ]);
+      setUploadSuccess("Documents ready");
+      setMessages((currentMessages) => {
+        const nonSystemMessages = currentMessages.filter((message) => message.role !== "system");
+
+        return [
+          {
+            role: "system",
+            content: DOCUMENTS_READY_MESSAGE,
+          },
+          ...nonSystemMessages,
+        ];
+      });
     } catch (error) {
-      setUploadError(
-        error?.message || "We could not process your documents right now."
-      );
+      setUploadError(error?.message || "We could not process your documents right now.");
     } finally {
       setIsProcessing(false);
     }
@@ -262,8 +250,7 @@ function Upload() {
         },
       ]);
     } catch (error) {
-      const friendlyMessage =
-        error?.message || "AI service unavailable.";
+      const friendlyMessage = error?.message || "AI service unavailable.";
 
       setChatError(friendlyMessage);
       setMessages((currentMessages) => [
@@ -283,247 +270,225 @@ function Upload() {
     await handleSend();
   };
 
-  const handleResetSession = () => {
-    setClaimSession(null);
-    setPolicyFile(null);
-    setEstimateFile(null);
-    setPolicyError("");
-    setEstimateError("");
-    setUploadError("");
-    setUploadSuccess("");
-    setChatError("");
-    setInput("");
-    setMessages(createStarterMessages(false));
+  const renderDocumentCard = ({
+    key,
+    label,
+    inputRef,
+    file,
+    storedFileName,
+    onSelect,
+    error,
+    icon,
+  }) => {
+    const hasFile = Boolean(file || storedFileName);
+    const fileName = file?.name || storedFileName || "";
+    const fileSize = file ? formatFileSize(file.size) : "";
 
-    if (policyInputRef.current) {
-      policyInputRef.current.value = "";
-    }
+    return (
+      <article className="document-card" key={key}>
+        <div className="document-card-top">
+          <span className="document-icon" aria-hidden="true">
+            {icon}
+          </span>
+          <div>
+            <h3>{label}</h3>
+          </div>
+        </div>
 
-    if (estimateInputRef.current) {
-      estimateInputRef.current.value = "";
-    }
+        <button
+          type="button"
+          className={`document-dropzone${hasFile ? " is-ready" : ""}`}
+          onClick={() => inputRef.current?.click()}
+          aria-label={`Upload ${label}`}
+        >
+          {hasFile ? (
+            <span className="selected-file">
+              <span className="selected-file-main">{fileName}</span>
+              <span className="selected-file-meta">
+                {fileSize || "Processed"}
+                <span className="check-mark" aria-hidden="true">
+                  ✓
+                </span>
+              </span>
+            </span>
+          ) : (
+            <span className="dropzone-copy">Drag &amp; drop or click to upload</span>
+          )}
+        </button>
+
+        <input
+          ref={inputRef}
+          type="file"
+          accept=".pdf,application/pdf"
+          onChange={onSelect}
+          aria-label={label}
+        />
+
+        {error && <p className="field-error">{error}</p>}
+      </article>
+    );
   };
 
-  const uploadButtonLabel = claimReady ? "Update Documents" : "Process Documents";
-
-  const policyFileLabel = policyFile
-    ? `${policyFile.name} · ${formatFileSize(policyFile.size)}`
-    : claimSession?.policyFileName || "No PDF selected yet";
-
-  const estimateFileLabel = estimateFile
-    ? `${estimateFile.name} · ${formatFileSize(estimateFile.size)}`
-    : claimSession?.estimateFileName || "No PDF selected yet";
-
   return (
-    <div className="app-shell">
-      <main className={`layout${isChatExpanded ? " chat-expanded" : ""}`}>
-        <section className="hero-panel">
-          <div className="hero-copy">
-            <p className="eyebrow">MEDIBRIDGE AI</p>
-
-            <h1>
-              Upload PDFs,
-              <br />
-              extract coverage,
-              <br />
-              ask instantly.
-            </h1>
-
-            <p className="hero-text">
-              Process an insurance policy PDF and a hospital estimate PDF,
-              store the extracted text in a claim session, then ask questions
-              about coverage, exclusions, waiting periods, and out-of-pocket costs.
-            </p>
+    <div className={`app-shell${isChatExpanded ? " is-chat-expanded" : ""}`}>
+      <div className="dashboard-shell">
+        <aside className="sidebar-panel">
+          <div className="brand-lockup">
+            <span className="brand-mark" aria-hidden="true">
+              <span />
+            </span>
+            <div>
+              <strong>MediBridge AI</strong>
+            </div>
           </div>
 
-          <div className="claim-panel">
-            <div className="claim-panel-header">
+          <nav className="sidebar-nav" aria-label="Primary">
+            <button type="button" className="nav-item active">
+              <span className="nav-icon" aria-hidden="true">
+                ⌂
+              </span>
+              <span>Home</span>
+            </button>
+          </nav>
+        </aside>
+
+        <main className="workspace-grid">
+          <section className="panel upload-panel">
+            <div className="panel-header">
               <div>
-                <p className="panel-label">DOCUMENT UPLOAD</p>
-                <h2>Prepare your claim session</h2>
+                <p className="eyebrow">Document Upload</p>
+                <h2>Upload Documents</h2>
+                <p className="section-subtitle">
+                  Add your insurance policy and hospital estimate to get started.
+                </p>
               </div>
 
               <span className={`status-pill ${claimReady ? "ready" : "busy"}`}>
-                {claimReady ? "Claim ready" : "Awaiting PDFs"}
+                {claimReady ? "Ready" : "Waiting"}
               </span>
             </div>
 
-            <div className="claim-grid">
-              <div className="info-card upload-card">
-                <span>Insurance Policy PDF</span>
-                <strong>{policyFileLabel}</strong>
-                <p>
-                  Upload the policy PDF that describes your coverage, exclusions,
-                  and limits.
-                </p>
-                <div className="upload-card-actions">
-                  <button
-                    type="button"
-                    onClick={() => policyInputRef.current?.click()}
-                  >
-                    {policyFile ? "Replace PDF" : "Choose PDF"}
-                  </button>
-                </div>
-                <input
-                  ref={policyInputRef}
-                  type="file"
-                  accept=".pdf,application/pdf"
-                  onChange={handlePolicySelect}
-                />
-                {policyError && <p className="error-text">{policyError}</p>}
-              </div>
+            <div className="document-grid">
+              {renderDocumentCard({
+                key: "policy",
+                label: "Insurance Policy",
+                inputRef: policyInputRef,
+                file: policyFile,
+                storedFileName: claimSession?.policyFileName,
+                onSelect: handlePolicySelect,
+                error: policyError,
+                icon: "▣",
+              })}
 
-              <div className="info-card upload-card">
-                <span>Hospital Estimate PDF</span>
-                <strong>{estimateFileLabel}</strong>
-                <p>
-                  Upload the estimate PDF so MediBridge can compare billing
-                  items against the policy.
-                </p>
-                <div className="upload-card-actions">
-                  <button
-                    type="button"
-                    onClick={() => estimateInputRef.current?.click()}
-                  >
-                    {estimateFile ? "Replace PDF" : "Choose PDF"}
-                  </button>
-                </div>
-                <input
-                  ref={estimateInputRef}
-                  type="file"
-                  accept=".pdf,application/pdf"
-                  onChange={handleEstimateSelect}
-                />
-                {estimateError && <p className="error-text">{estimateError}</p>}
-              </div>
-
-              <div className="info-card full-width highlight">
-                <span>Claim Session</span>
-                <strong>
-                  {claimReady ? "Ready for chat" : "No claim created yet"}
-                </strong>
-                <p>
-                  {claimReady
-                    ? `Claim ID: ${claimId}`
-                    : "Upload both PDFs to create a claim ID and unlock document-based chat."}
-                </p>
-                {claimReady && (
-                  <div className="claim-session-meta">
-                    <p>
-                      Policy file: <strong>{claimSession?.policyFileName}</strong>
-                    </p>
-                    <p>
-                      Estimate file: <strong>{claimSession?.estimateFileName}</strong>
-                    </p>
-                  </div>
-                )}
-              </div>
+              {renderDocumentCard({
+                key: "estimate",
+                label: "Hospital Estimate",
+                inputRef: estimateInputRef,
+                file: estimateFile,
+                storedFileName: claimSession?.estimateFileName,
+                onSelect: handleEstimateSelect,
+                error: estimateError,
+                icon: "▣",
+              })}
             </div>
 
-            <div className="session-actions">
+            <div className="upload-footer">
               <button
                 type="button"
-                className="process-button"
+                className="primary-action"
                 onClick={handleProcessDocuments}
                 disabled={isProcessing || !policyFile || !estimateFile}
               >
-                {isProcessing ? "Processing your documents..." : uploadButtonLabel}
+                {isProcessing ? "Processing..." : "Start Claim Session"}
               </button>
 
-              {claimReady && (
-                <button
-                  type="button"
-                  className="secondary-button"
-                  onClick={handleResetSession}
-                >
-                  Clear session
-                </button>
+              {uploadSuccess && (
+                <span className="compact-success" aria-live="polite">
+                  <span aria-hidden="true">✓</span>
+                  <span>{uploadSuccess}</span>
+                </span>
               )}
             </div>
 
-            {uploadSuccess && <p className="success-text">{uploadSuccess}</p>}
-            {uploadError && <p className="error-text">{uploadError}</p>}
-          </div>
-        </section>
+            <p className="subtle-note">Your documents are used to answer coverage questions.</p>
+            {uploadError && <p className="field-error upload-error">{uploadError}</p>}
+          </section>
 
-        <section className="chat-panel">
-          <div className="chat-header">
-            <div>
-              <p className="panel-label">CHATBOT</p>
-              <h2>Ask MediBridge AI</h2>
-            </div>
+          <section className="panel chat-panel">
+            <div className="chat-header">
+              <div>
+                <p className="eyebrow">Chatbot</p>
+                <h2>Ask MediBridge AI</h2>
+              </div>
 
-            <div className="chat-header-actions">
-              <span className={`status-pill ${claimReady ? "ready" : "busy"}`}>
-                {claimReady ? "Ready" : "Upload required"}
-              </span>
-
-              <button
-                type="button"
-                className="chat-expand-button"
-                onClick={() => setIsChatExpanded((current) => !current)}
-                aria-label={isChatExpanded ? "Collapse chat" : "Expand chat"}
-                title={isChatExpanded ? "Collapse chat" : "Expand chat"}
-              >
-                <span aria-hidden="true">{isChatExpanded ? "⤡" : "⤢"}</span>
-              </button>
-            </div>
-          </div>
-
-          <div className="message-stream">
-            {messages.map((message, index) => (
-              <article key={index} className={`message ${message.role}`}>
-                <span className="message-role">
-                  {message.role === "assistant" ? "MEDIBRIDGE" : "YOU"}
+              <div className="chat-header-actions">
+                <span className={`status-pill ${claimReady ? "ready" : "busy"}`}>
+                  {claimReady ? "Ready" : "Upload required"}
                 </span>
-                <p>{message.content}</p>
-              </article>
-            ))}
-          </div>
 
-          <div className="prompt-row">
-            {quickPrompts.map((prompt) => (
-              <button
-                key={prompt}
-                className="prompt-chip"
-                type="button"
-                disabled={!claimReady || isSending}
-                onClick={() => handleSend(prompt)}
-              >
-                {prompt}
-              </button>
-            ))}
-          </div>
-
-          <form className="composer" onSubmit={handleSubmit}>
-            <textarea
-              value={input}
-              onChange={(event) => setInput(event.target.value)}
-              placeholder={
-                claimReady
-                  ? "Type your question here..."
-                  : "Upload both PDFs first to enable document-specific chat..."
-              }
-              rows={3}
-              disabled={!claimReady}
-            />
-
-            <div className="composer-footer">
-              <p className="helper-text">
-                {claimReady
-                  ? "I can explain insurance and billing, but I can't provide medical advice."
-                  : "Process your PDFs first so the chatbot can use the claim ID and extracted text."}
-              </p>
-
-              <button type="submit" disabled={isSending || !claimReady || !input.trim()}>
-                {isSending ? "Sending..." : "Send"}
-              </button>
+                <button
+                  type="button"
+                  className="chat-expand-button"
+                  onClick={() => setIsChatExpanded((current) => !current)}
+                  aria-label={isChatExpanded ? "Collapse chat" : "Expand chat"}
+                  title={isChatExpanded ? "Collapse chat" : "Expand chat"}
+                >
+                  <span aria-hidden="true">{isChatExpanded ? "⤡" : "⤢"}</span>
+                </button>
+              </div>
             </div>
 
-            {chatError && <p className="error-text">{chatError}</p>}
-          </form>
-        </section>
-      </main>
+            <div className="chat-body">
+              <div className="message-stream">
+                {!claimReady && messages.length === 0 ? (
+                  <div className="chat-empty-state">
+                    <span className="chat-empty-icon" aria-hidden="true">
+                      ✦
+                    </span>
+                    <p>Upload your documents to start asking questions.</p>
+                  </div>
+                ) : (
+                  messages.map((message, index) => (
+                    <article key={index} className={`message ${message.role}`}>
+                      <span className="message-role">
+                        {message.role === "assistant"
+                          ? "MEDIBRIDGE"
+                          : message.role === "user"
+                            ? "YOU"
+                            : "SYSTEM"}
+                      </span>
+                      <p>{message.content}</p>
+                    </article>
+                  ))
+                )}
+              </div>
+
+              <form className="composer" onSubmit={handleSubmit}>
+                <div className="composer-shell">
+                  <textarea
+                    value={input}
+                    onChange={(event) => setInput(event.target.value)}
+                    placeholder="Ask about your coverage..."
+                    rows={2}
+                    disabled={!claimReady || isSending}
+                  />
+
+                  <button
+                    type="submit"
+                    className="send-button"
+                    disabled={isSending || !claimReady || !input.trim()}
+                    aria-label="Send message"
+                  >
+                    <span aria-hidden="true">➤</span>
+                  </button>
+                </div>
+
+                {chatError && <p className="field-error chat-error">{chatError}</p>}
+              </form>
+            </div>
+          </section>
+        </main>
+      </div>
     </div>
   );
 }
