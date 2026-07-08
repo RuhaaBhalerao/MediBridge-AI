@@ -126,6 +126,46 @@ textarea {
   flex-wrap: wrap;
 }
 
+.process-button,
+.secondary-button {
+  padding: 12px 18px;
+  border: 0;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: transform 0.16s ease, opacity 0.16s ease, box-shadow 0.16s ease,
+    background 0.16s ease;
+}
+
+.process-button {
+  background: linear-gradient(135deg, #67d6b7 0%, #4ca2c6 100%);
+  color: #061218;
+  font-weight: 700;
+  box-shadow: 0 12px 30px rgba(76, 162, 198, 0.18);
+}
+
+.secondary-button {
+  background: rgba(255, 255, 255, 0.08);
+  color: #eef7fa;
+  border: 1px solid rgba(134, 180, 201, 0.18);
+}
+
+.process-button:hover,
+.secondary-button:hover {
+  transform: translateY(-1px);
+}
+
+.process-button:disabled,
+.secondary-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.success-text {
+  margin-top: 12px;
+  color: #8ed9c5;
+}
+
 .loaded-strip {
   display: flex;
   align-items: center;
@@ -203,6 +243,57 @@ textarea {
   margin: 0;
   color: #b5c7d1;
   line-height: 1.5;
+}
+
+.upload-card {
+  min-height: 100%;
+}
+
+.upload-card input[type="file"] {
+  display: none;
+}
+
+.upload-card-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.upload-card-actions button {
+  padding: 12px 18px;
+  border: 0;
+  border-radius: 999px;
+  cursor: pointer;
+  background: linear-gradient(135deg, #67d6b7 0%, #4ca2c6 100%);
+  color: #061218;
+  font-weight: 700;
+  transition: transform 0.16s ease, opacity 0.16s ease;
+}
+
+.upload-card-actions button:hover {
+  transform: translateY(-1px);
+}
+
+.upload-card-actions button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.claim-session-meta {
+  display: grid;
+  gap: 6px;
+  margin-top: 12px;
+}
+
+.claim-session-meta p {
+  margin: 0;
+  color: #b5c7d1;
+  word-break: break-word;
+}
+
+.claim-session-meta strong {
+  color: #f4fbfd;
 }
 
 .progress-stack {

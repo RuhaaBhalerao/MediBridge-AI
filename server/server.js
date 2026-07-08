@@ -15,6 +15,7 @@ app.use(cors());
 app.use(express.json());
 app.use("/api/auth", authRoutes);
 app.use("/api/claims", claimRoutes);
+app.use("/api/upload", uploadRoutes);
 app.use("/api/documents", uploadRoutes);
 app.use("/api/dashboard", analysisRoutes);
 app.use("/api/notifications", notificationRoutes);

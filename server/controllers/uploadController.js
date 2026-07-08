@@ -1,7 +1,7 @@
+import { isValidObjectId } from "mongoose";
 import Claim from "../models/Claim.js";
 import Document from "../models/Document.js";
-import { createNotification } from "../services/notificationService.js";
-import { logAuditAction } from "../services/auditService.js";
+import { extractTextFromPDF } from "../services/pdfService.js";
 
 const canAccessClaim = (claim, user) => {
 	if (!claim || !user) {
@@ -9,7 +9,7 @@ const canAccessClaim = (claim, user) => {
 	}
 
 	if (user.role === "patient") {
-		return claim.patientId.toString() === user._id.toString();
+		return claim.patientId?.toString() === user._id.toString();
 	}
 
 	if (user.role === "hospital") {
@@ -25,66 +25,75 @@ const canAccessClaim = (claim, user) => {
 
 export const uploadDocument = async (req, res) => {
 	try {
-		const { claimId, fileName, fileUrl, fileType, notes } = req.body;
+		const policyFile = req.files?.policy?.[0];
+		const estimateFile = req.files?.estimate?.[0];
+		const requestedClaimId = req.body.claimId?.trim();
 
-		if (!claimId || !fileName || !fileUrl) {
+		if (!policyFile || !estimateFile) {
 			return res.status(400).json({
-				message: "claimId, fileName, and fileUrl are required",
+				message: "Both insurance policy PDF and hospital estimate PDF are required",
 			});
 		}
 
-		const claim = await Claim.findById(claimId);
+		const [policyText, hospitalEstimateText] = await Promise.all([
+			extractTextFromPDF(policyFile.buffer),
+			extractTextFromPDF(estimateFile.buffer),
+		]);
 
-		if (!claim) {
-			return res.status(404).json({
-				message: "Claim not found",
+		const claimPayload = {
+			policyText,
+			hospitalEstimateText,
+			policyFileName: policyFile.originalname,
+			estimateFileName: estimateFile.originalname,
+		};
+
+		let claim;
+		let updatedExistingClaim = false;
+
+		if (requestedClaimId && isValidObjectId(requestedClaimId)) {
+			claim = await Claim.findById(requestedClaimId);
+		}
+
+		if (claim) {
+			updatedExistingClaim = true;
+			claim.set(claimPayload);
+			await claim.save();
+		} else {
+			claim = await Claim.create({
+				...claimPayload,
+				treatment: "",
+				diagnosis: "",
+				amount: 0,
+				status: "submitted",
 			});
 		}
 
-		if (!canAccessClaim(claim, req.user)) {
-			return res.status(403).json({
-				message: "Access denied",
-			});
-		}
-
-		const document = await Document.create({
-			claimId,
-			uploadedBy: req.user._id,
-			fileName,
-			fileUrl,
-			fileType,
-			notes,
-		});
-
-		if (claim.patientId) {
-			await createNotification({
-				recipientId: claim.patientId,
-				senderId: req.user._id,
-				claimId: claim._id,
-				type: "document_uploaded",
-				title: "New document uploaded",
-				message: `A new document was uploaded for ${claim.diagnosis}.`,
-			});
-		}
-
-		await logAuditAction({
-			actorId: req.user._id,
-			actorRole: req.user.role,
-			action: "document_uploaded",
-			entityType: "Document",
-			entityId: document._id,
-			claimId: claim._id,
-			metadata: {
-				fileName,
-				fileType: fileType || "",
-			},
-		});
-
-		res.status(201).json({
-			message: "Document uploaded successfully",
-			document,
+		res.status(updatedExistingClaim ? 200 : 201).json({
+			success: true,
+			message: "Documents uploaded and processed successfully",
+			claimId: claim._id.toString(),
+			policyFileName: claim.policyFileName,
+			estimateFileName: claim.estimateFileName,
 		});
 	} catch (error) {
+		if (
+			typeof error?.message === "string" &&
+			error.message.includes("We couldn't extract text from this PDF")
+		) {
+			return res.status(422).json({
+				message: error.message,
+			});
+		}
+
+		if (
+			typeof error?.message === "string" &&
+			error.message.includes("We couldn't process this PDF")
+		) {
+			return res.status(400).json({
+				message: error.message,
+			});
+		}
+
 		res.status(500).json({
 			message: error.message,
 		});

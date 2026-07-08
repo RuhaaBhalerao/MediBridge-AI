@@ -73,6 +73,9 @@ export const generateMediBridgeResponse = async ({
 	}
 
 	const model = process.env.OPENROUTER_MODEL || DEFAULT_MODEL;
+	console.log("[OPENROUTER] Service called");
+	console.log("[OPENROUTER] Model:", process.env.OPENROUTER_MODEL);
+	console.log("[OPENROUTER] API key configured:", Boolean(process.env.OPENROUTER_API_KEY));
 	const systemPrompt = buildStrictSystemPrompt({
 		message: trimmedMessage,
 		context,
@@ -105,13 +108,19 @@ export const generateMediBridgeResponse = async ({
 			}),
 		});
 
-		console.log(`[OpenRouter] status=${response.status}`);
+		console.log("[OPENROUTER] Response status:", response.status);
 
 		if (!response.ok) {
 			let upstreamMessage = "";
 			try {
-				const errJson = await response.json();
-				upstreamMessage = errJson?.error?.message || "";
+				const errorBody = await response.text();
+				console.error("[OPENROUTER] Request failed:", response.status, errorBody);
+				try {
+					const errJson = JSON.parse(errorBody);
+					upstreamMessage = errJson?.error?.message || "";
+				} catch {
+					upstreamMessage = errorBody || "";
+				}
 			} catch {
 				upstreamMessage = "";
 			}
@@ -139,11 +148,11 @@ export const generateMediBridgeResponse = async ({
 		};
 	} catch (error) {
 		if (error instanceof Error) {
-			console.error("[OpenRouter] request failed:", error.message);
+			console.error("[OPENROUTER] Error:", error.message);
 			throw error;
 		}
 
-		console.error("[OpenRouter] request failed: unknown network error");
+		console.error("[OPENROUTER] Error:", "unknown network error");
 		throw new Error("Network error while calling OpenRouter.");
 	}
 };

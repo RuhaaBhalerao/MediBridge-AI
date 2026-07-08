@@ -5,7 +5,6 @@ const claimSchema = new mongoose.Schema(
     patientId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
-      required: true,
     },
 
     hospitalId: {
@@ -30,17 +29,19 @@ const claimSchema = new mongoose.Schema(
 
     treatment: {
       type: String,
-      required: true,
+      trim: true,
+      default: "",
     },
 
     diagnosis: {
       type: String,
-      required: true,
+      trim: true,
+      default: "",
     },
 
     amount: {
       type: Number,
-      required: true,
+      default: 0,
     },
 
     coverageAmount: {
@@ -119,17 +120,30 @@ const claimSchema = new mongoose.Schema(
     reviewedAt: {
       type: Date,
     },
-    policyText: {
-  type: String,
-  trim: true,
-  default: "",
-},
 
-hospitalEstimateText: {
-  type: String,
-  trim: true,
-  default: "",
-},
+    policyText: {
+      type: String,
+      trim: true,
+      default: "",
+    },
+
+    hospitalEstimateText: {
+      type: String,
+      trim: true,
+      default: "",
+    },
+
+    policyFileName: {
+      type: String,
+      trim: true,
+      default: "",
+    },
+
+    estimateFileName: {
+      type: String,
+      trim: true,
+      default: "",
+    },
   },
   {
     timestamps: true,
