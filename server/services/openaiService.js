@@ -56,6 +56,54 @@ const mapOpenRouterError = (status) => {
 	return `OpenRouter request failed with status ${status}.`;
 };
 
+export const callOpenRouterChatCompletion = async ({
+	messages,
+	temperature = 0.2,
+	model = DEFAULT_MODEL,
+}) => {
+	const apiKey = process.env.OPENROUTER_API_KEY;
+	if (!apiKey) {
+		throw new Error("OPENROUTER_API_KEY is missing in environment configuration.");
+	}
+
+	const response = await fetch(OPENROUTER_CHAT_URL, {
+		method: "POST",
+		headers: {
+			Authorization: `Bearer ${apiKey}`,
+			"Content-Type": "application/json",
+		},
+		body: JSON.stringify({
+			model,
+			messages,
+			temperature,
+		}),
+	});
+
+	if (!response.ok) {
+		let upstreamMessage = "";
+		try {
+			const errorBody = await response.text();
+			console.error("[OPENROUTER] Request failed:", response.status, errorBody);
+			try {
+				const errJson = JSON.parse(errorBody);
+				upstreamMessage = errJson?.error?.message || "";
+			} catch {
+				upstreamMessage = errorBody || "";
+			}
+		} catch {
+			upstreamMessage = "";
+		}
+
+		const mappedMessage = mapOpenRouterError(response.status);
+		const fullMessage = upstreamMessage ? `${mappedMessage} ${upstreamMessage}` : mappedMessage;
+
+		console.error("[OpenRouter] error:", fullMessage);
+		throw new Error(fullMessage);
+	}
+
+	return response.json();
+};
+
 export const generateMediBridgeResponse = async ({
 	message,
 	history = [],
@@ -65,11 +113,6 @@ export const generateMediBridgeResponse = async ({
 
 	if (!trimmedMessage) {
 		throw new Error("Message is required");
-	}
-
-	const apiKey = process.env.OPENROUTER_API_KEY;
-	if (!apiKey) {
-		throw new Error("OPENROUTER_API_KEY is missing in environment configuration.");
 	}
 
 	const model = process.env.OPENROUTER_MODEL || DEFAULT_MODEL;
@@ -94,47 +137,11 @@ export const generateMediBridgeResponse = async ({
 
 	try {
 		console.log(`[OpenRouter] model=${model}`);
-
-		const response = await fetch(OPENROUTER_CHAT_URL, {
-			method: "POST",
-			headers: {
-				Authorization: `Bearer ${apiKey}`,
-				"Content-Type": "application/json",
-			},
-			body: JSON.stringify({
-				model,
-				messages,
-				temperature: 0.2,
-			}),
+		const data = await callOpenRouterChatCompletion({
+			messages,
+			temperature: 0.2,
+			model,
 		});
-
-		console.log("[OPENROUTER] Response status:", response.status);
-
-		if (!response.ok) {
-			let upstreamMessage = "";
-			try {
-				const errorBody = await response.text();
-				console.error("[OPENROUTER] Request failed:", response.status, errorBody);
-				try {
-					const errJson = JSON.parse(errorBody);
-					upstreamMessage = errJson?.error?.message || "";
-				} catch {
-					upstreamMessage = errorBody || "";
-				}
-			} catch {
-				upstreamMessage = "";
-			}
-
-			const mappedMessage = mapOpenRouterError(response.status);
-			const fullMessage = upstreamMessage
-				? `${mappedMessage} ${upstreamMessage}`
-				: mappedMessage;
-
-			console.error("[OpenRouter] error:", fullMessage);
-			throw new Error(fullMessage);
-		}
-
-		const data = await response.json();
 		const reply = data?.choices?.[0]?.message?.content?.trim();
 
 		if (!reply) {

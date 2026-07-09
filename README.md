@@ -93,7 +93,6 @@ User Input (React)
 ```
 
 ---
-
 ##  Getting Started
 
 ### Prerequisites

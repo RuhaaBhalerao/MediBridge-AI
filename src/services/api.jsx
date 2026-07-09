@@ -71,6 +71,14 @@ export const uploadClaimDocuments = async ({
   return parseResponse(response);
 };
 
+export const retryClaimAnalysis = async (claimId) => {
+  const response = await fetch(`${API_BASE_URL}/api/upload/${claimId}/analyze`, {
+    method: "POST",
+  });
+
+  return parseResponse(response);
+};
+
 export const getCurrentUser = async (token) => {
   const authToken = token || getStoredAuthToken();
 

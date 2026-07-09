@@ -144,6 +144,112 @@ const claimSchema = new mongoose.Schema(
       trim: true,
       default: "",
     },
+
+    analysisStatus: {
+      type: String,
+      enum: ["pending", "complete", "failed"],
+      default: "pending",
+    },
+
+    analysisError: {
+      type: String,
+      trim: true,
+      default: "",
+    },
+
+    analysis: {
+      costBreakdown: {
+        totalEstimate: {
+          type: Number,
+          default: null,
+        },
+        estimatedCoverage: {
+          type: Number,
+          default: null,
+        },
+        estimatedPatientCost: {
+          type: Number,
+          default: null,
+        },
+      },
+      coverageClarity: {
+        score: {
+          type: Number,
+          min: 0,
+          max: 100,
+          default: null,
+        },
+        status: {
+          type: String,
+          trim: true,
+          default: "unclear",
+        },
+        reason: {
+          type: String,
+          trim: true,
+          default: "",
+        },
+      },
+      coverageFlags: [
+        {
+          type: {
+            type: String,
+            trim: true,
+            enum: ["positive", "warning", "risk"],
+            default: "warning",
+          },
+          title: {
+            type: String,
+            trim: true,
+            default: "",
+          },
+          reason: {
+            type: String,
+            trim: true,
+            default: "",
+          },
+        },
+      ],
+      claimReadiness: {
+        score: {
+          type: Number,
+          min: 0,
+          max: 100,
+          default: null,
+        },
+        checks: [
+          {
+            label: {
+              type: String,
+              trim: true,
+              default: "",
+            },
+            status: {
+              type: String,
+              trim: true,
+              enum: ["complete", "unclear", "missing"],
+              default: "unclear",
+            },
+          },
+        ],
+      },
+      nextAction: {
+        title: {
+          type: String,
+          trim: true,
+          default: "",
+        },
+        reason: {
+          type: String,
+          trim: true,
+          default: "",
+        },
+      },
+      generatedAt: {
+        type: Date,
+        default: null,
+      },
+    },
   },
   {
     timestamps: true,
