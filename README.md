@@ -1,196 +1,399 @@
-<div align="center">
-
-<img src="https://img.shields.io/badge/MediBridge-AI-0b6e99?style=for-the-badge&logo=data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHBhdGggZmlsbD0id2hpdGUiIGQ9Ik0xMiAyQzYuNDggMiAyIDYuNDggMiAxMnM0LjQ4IDEwIDEwIDEwIDEwLTQuNDggMTAtMTBTMTcuNTIgMiAxMiAyek0xMyAxN2gtMnYtNmgydjZ6bTAtOGgtMlY3aDJ2MnoiLz48L3N2Zz4=" alt="MediBridge AI" />
-
 # 🏥 MediBridge AI
+### AI-Powered Healthcare Insurance Claim Assistant
 
-### An AI-powered health & wellness chatbot for smarter, accessible healthcare guidance
-
-</div>
-
-Problem
-
-Medical billing and insurance policies are often difficult for patients to understand.
-
-Patients frequently struggle with:
-
-Understanding what their insurance actually covers
-Estimating out-of-pocket expenses
-Comparing hospital estimates against policy benefits
-Identifying hidden costs before treatment
-Making financially informed healthcare decisions
-
-As a result, many patients face unexpected medical expenses despite having insurance.
-
-##  Overview
-
-**MediBridge AI** is a full-stack intelligent health assistant that bridges the gap between users and healthcare information. It delivers personalized health guidance, answers medical questions in plain language, and helps users make informed decisions about their well-being — all through a clean, conversational interface.
-
-The application pairs a responsive React frontend with a Node.js backend, communicating with an AI language model to handle health-related queries with accuracy and empathy.
-
->  **Disclaimer:** MediBridge AI provides informational guidance only. It is not a substitute for professional medical advice, diagnosis, or treatment.
+![React](https://img.shields.io/badge/React-19-blue?logo=react)
+![Node.js](https://img.shields.io/badge/Node.js-Express-green?logo=node.js)
+![MongoDB](https://img.shields.io/badge/MongoDB-Atlas-green?logo=mongodb)
+![OpenRouter](https://img.shields.io/badge/AI-OpenRouter-purple)
+![License](https://img.shields.io/badge/License-MIT-yellow)
 
 ---
 
-##  Features
+## 📖 Overview
 
--  AI-Powered Chat — Conversational health assistant powered by a large language model, capable of answering symptom queries, wellness tips, and general medical FAQs
-- Natural Language Interface — Ask questions in plain English; no medical jargon required
-- Real-Time Responses — Streaming or near-instant reply generation for a smooth chat experience
-- Clean, Focused UI — Minimal and accessible design optimized for health conversations
-- Full-Stack Architecture — Decoupled React frontend + Express/Node.js API server
-- Cloud Deployed — Hosted on Vercel for high availability and fast global delivery
+Healthcare insurance claims are often difficult for patients to understand. Insurance policies contain lengthy legal terminology, while hospital estimates use complex medical language. This makes it challenging for patients to determine:
 
----
+- Is this treatment covered?
+- How much will insurance pay?
+- How much do I have to pay?
+- Why was a claim approved or rejected?
 
-##  Screenshots
-
-<h2 align="center">Screenshots</h2>
-
-<p align="center">
-  <img src="https://github.com/user-attachments/assets/10395d36-74bb-4f83-994d-53c7d7ccb427" width="300">
-</p>
-
-<p align="center">
-  <img src="https://github.com/user-attachments/assets/2bfb8460-5fcc-4788-a081-8c3a1e7be6c8" width="420">
-  &nbsp;&nbsp;&nbsp;&nbsp;
-  <img src="https://github.com/user-attachments/assets/a68e4836-2aca-4d8d-ad24-1de75a1b9f98" width="420">
-</p>
+**MediBridge AI** bridges this gap by allowing users to upload their insurance policy and hospital estimate, after which an AI assistant answers claim-related questions in simple language.
 
 ---
 
-##  Architecture
+# 🚨 Problem Statement
+
+Healthcare insurance documentation is:
+
+- Difficult to understand
+- Filled with legal jargon
+- Time-consuming to read
+- Different for every insurance company
+- Hard to compare against hospital bills
+
+Patients often spend hours contacting insurance providers just to understand whether their treatment is covered.
+
+---
+**Live deployment link**-https://medi-bridge-ai.vercel.app/
+# 💡 My Solution
+
+MediBridge AI simplifies the insurance claim process by combining document processing with Generative AI.
+
+Users simply:
+
+1. Login
+2. Upload Insurance Policy PDF
+3. Upload Hospital Estimate PDF
+4. Ask questions naturally
+
+Example:
+
+> "Is my knee replacement covered?"
+
+The AI reads both uploaded documents, compares them, and provides a clear explanation with supporting evidence.
+
+---
+
+# ✨ Features
+
+## 🔐 Authentication
+
+- User Registration
+- Secure Login
+- JWT Authentication
+- Protected Routes
+
+---
+
+## 📄 Smart Document Upload
+
+- Upload Insurance Policy PDF
+- Upload Hospital Estimate PDF
+- PDF Text Extraction
+- Cloud Storage Support
+- MongoDB Storage
+
+---
+
+## 🤖 AI Insurance Assistant
+
+- Context-aware chatbot
+- Reads uploaded documents
+- Explains policy clauses
+- Answers natural language questions
+- Coverage analysis
+- Patient payment estimation
+
+---
+
+## 📊 Claim Analysis
+
+- AI-powered claim analysis
+- Coverage insights
+- Missing document detection
+- Risk assessment
+
+---
+
+## 📈 Analytics
+
+- Claim statistics
+- Analysis reports
+- Dashboard insights
+
+---
+
+## 📝 Audit Logs
+
+Every important action is recorded.
+
+Examples:
+
+- Login
+- Upload
+- AI Chat
+- Claim Analysis
+
+---
+
+## 📱 Responsive Interface
+
+- React Frontend
+- Modern Dashboard
+- Clean UI
+- Mobile Friendly
+
+---
+
+# 🏗 System Architecture
+
+```mermaid
+flowchart LR
+
+    User([User])
+
+    Frontend["React Frontend"]
+
+    Backend["Express Backend"]
+
+    Database[("MongoDB")]
+
+    AI["OpenRouter AI"]
+
+    User --> Frontend
+    Frontend --> Backend
+
+    Backend --> Database
+    Database --> Backend
+
+    Backend --> AI
+    AI --> Backend
+
+    Backend --> Frontend
+    Frontend --> User
+```
+
+---
+
+# 🔄 User Flow
+
+```mermaid
+flowchart TD
+
+A[User Opens MediBridge]
+
+A --> B[Register/Login]
+
+B --> C[Dashboard]
+
+C --> D[Upload Insurance Policy]
+
+C --> E[Upload Hospital Estimate]
+
+D --> F[Extract PDF Text]
+
+E --> F
+
+F --> G[Store in MongoDB]
+
+G --> H[AI Chatbot]
+
+H --> I[Ask Question]
+
+I --> J[OpenRouter AI]
+
+J --> K[Analyze Policy + Estimate]
+
+K --> L[Generate Response]
+
+L --> M[Display Answer]
+```
+
+---
+
+# 🤖 AI Workflow
+
+```mermaid
+sequenceDiagram
+
+participant User
+participant React
+participant Express
+participant MongoDB
+participant OpenRouter
+
+User->>React: Upload PDFs
+
+React->>Express: POST /upload
+
+Express->>MongoDB: Save Claim
+
+MongoDB-->>Express: Claim ID
+
+User->>React: Ask Question
+
+React->>Express: POST /chat
+
+Express->>MongoDB: Fetch Documents
+
+MongoDB-->>Express: Policy + Estimate
+
+Express->>OpenRouter: Prompt
+
+OpenRouter-->>Express: AI Response
+
+Express-->>React: JSON Response
+
+React-->>User: Display Answer
+```
+
+---
+
+# 📂 Backend Workflow
+
+```mermaid
+flowchart LR
+
+Upload --> PDFParser
+
+PDFParser --> ClaimController
+
+ClaimController --> MongoDB
+
+MongoDB --> ChatController
+
+ChatController --> AIService
+
+AIService --> Response
+```
+
+---
+
+# 🗄 Database Design
+
+```mermaid
+erDiagram
+
+USER ||--o{ CLAIM : owns
+
+USER {
+
+ObjectId id
+
+string name
+
+string email
+
+string password
+
+}
+
+CLAIM {
+
+ObjectId id
+
+string policyText
+
+string estimateText
+
+string status
+
+Date createdAt
+
+}
+
+CLAIM ||--o{ ANALYSIS : contains
+
+CLAIM ||--o{ AUDITLOG : generates
+
+CHATSESSION ||--|| CLAIM : references
+```
+
+---
+
+# 📁 Project Structure
 
 ```
-MediBridge-AI/
-├── src/                    # React frontend
-│   ├── components/         # UI components (ChatWindow, MessageBubble, etc.)
-│   ├── assets/             # Static assets & icons
-│   ├── App.jsx             # Root application component
-│   └── main.jsx            # React entry point
+MediBridge/
+
 │
-├── server/                 # Node.js / Express backend
-│   ├── index.js            # Server entry point & route definitions
-│   └── ...                 # Middleware, API handlers
+
+├── src/
+
+│ ├── pages/
+
+│ ├── services/
+
+│ └── components/
+
 │
-├── .gitignore
+
+├── server/
+
+│ ├── config/
+
+│ ├── controllers/
+
+│ ├── middlewear/
+
+│ ├── models/
+
+│ ├── routes/
+
+│ ├── services/
+
+│ └── utils/
+
+│
+
 └── README.md
 ```
 
-**Data Flow:**
-
-```
-User Input (React)
-      │
-      ▼
-  Express API (Node.js)
-      │
-      ▼
-  AI Language Model (LLM API)
-      │
-      ▼
-  Response streamed back to UI
-```
-
 ---
-##  Getting Started
 
-### Prerequisites
+# 🛠 Tech Stack
 
-- [Node.js](https://nodejs.org/) v18 or higher
-- npm or yarn
-- An API key for your AI provider (e.g. OpenAI, Anthropic, etc.)
+### Frontend
 
-### Installation
+- React
+- Vite
+- React Router
+- Axios
 
-**1. Clone the repository**
+### Backend
 
-```bash
-git clone https://github.com/RuhaaBhalerao/MediBridge-AI.git
-cd MediBridge-AI
-```
+- Node.js
+- Express.js
 
-**2. Install frontend dependencies**
+### Database
 
-```bash
-npm install
-```
+- MongoDB Atlas
+- Mongoose
 
-**3. Install backend dependencies**
+### AI
 
-```bash
-cd server
-npm install
-cd ..
-```
+- OpenRouter API
+- Large Language Models
 
-**4. Configure environment variables**
+### File Processing
 
-Create a `.env` file in the root directory:
+- pdf-parse
+- Multer
 
-```env
-VITE_API_URL=http://localhost:3001
-```
+### Authentication
 
-Create a `.env` file inside the `server/` directory:
+- JWT
+- bcrypt
 
-```env
-PORT=3001
-AI_API_KEY=your_api_key_here
-```
-
-### Running Locally
-
-**Start the backend server:**
-
-```bash
-cd server
-node index.js
-```
-
-**In a new terminal, start the frontend:**
-
-```bash
-npm run dev
-```
-
-Open [http://localhost:5173](http://localhost:5173) in your browser.
 
 ---
 
-## 🌍 Deployment
+# 🚀 Future Scope
 
-The frontend is deployed on **https://medi-bridge-ai.vercel.app/**. To deploy your own instance:
-
-1. Fork this repository
-2. Import the project into Vercel
-3. Set the environment variable `VITE_API_URL` to your hosted backend URL
-4. Deploy the `server/` folder separately (e.g. Railway, Render, or Fly.io)
-
----
-
-## 🛠️ Tech Stack
-
-| Layer | Technology |
-|---|---|
-| Frontend | React, Vite, CSS |
-| Backend | Node.js, Express |
-| AI Integration | LLM API (OpenAI / compatible) |
-| Deployment | Vercel (frontend) |
-| Version Control | Git, GitHub |
+- OCR for scanned PDFs
+- Multi-language support
+- Insurance comparison
+- Automatic claim approval prediction
+- Fraud detection
+- Doctor recommendation engine
+- Email notifications
+- Mobile application
 
 ---
 
+# 🎯 Impact
+
+MediBridge AI helps:
+
+- Patients understand insurance policies
+- Reduce claim confusion
+- Save time
+- Improve transparency
+- Make healthcare documentation accessible to everyone
 
 
-##  Author
 
-**Ruhaa Bhalerao**
+# 📜 License
 
-[![GitHub](https://img.shields.io/badge/GitHub-RuhaaBhalerao-181717?style=flat-square&logo=github)](https://github.com/RuhaaBhalerao)
-
----
-
-<div align="center">
-  <sub>Built for accessible healthcare</sub>
-</div>
+MIT License
