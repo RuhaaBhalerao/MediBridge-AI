@@ -30,24 +30,40 @@ function DocumentCard({
           <p>{processed ? "Processed" : hasFile ? "Selected" : "Waiting for upload"}</p>
         </div>
         {processed && (
-          <span className="document-status-check" aria-hidden="true">
+          <span className="document-status-check" aria-label="Processed">
             ✓
           </span>
         )}
       </div>
 
-      <button type="button" className="document-dropzone" onClick={onClick} aria-label={`Upload ${label}`}>
+      <button
+        type="button"
+        className="document-dropzone"
+        onClick={onClick}
+        aria-label={`Upload ${label}`}
+      >
         {hasFile ? (
           <span className="selected-file">
-            <span className="selected-file-main">{fileName}</span>
-            <span className="selected-file-meta">{fileSize || (processed ? "Processed" : "Ready to upload")}</span>
+            {/* title gives the full name on hover — truncation handled by CSS */}
+            <span className="selected-file-main" title={fileName}>
+              {fileName}
+            </span>
+            <span className="selected-file-meta">
+              {fileSize || (processed ? "Processed" : "Ready to upload")}
+            </span>
           </span>
         ) : (
           <span className="dropzone-copy">Click to choose a PDF</span>
         )}
       </button>
 
-      <input ref={inputRef} type="file" accept=".pdf,application/pdf" onChange={onSelect} aria-label={label} />
+      <input
+        ref={inputRef}
+        type="file"
+        accept=".pdf,application/pdf"
+        onChange={onSelect}
+        aria-label={label}
+      />
 
       {error && <p className="field-error">{error}</p>}
     </article>

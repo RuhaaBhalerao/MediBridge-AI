@@ -5,8 +5,8 @@ import { uploadPdfDocuments } from "../middlewear/uploadMiddleware.js";
 
 const router = express.Router();
 
-router.post("/", uploadPdfDocuments, uploadDocument);
-router.post("/:claimId/analyze", analyzeClaimDocuments);
+router.post("/", protect, uploadPdfDocuments, uploadDocument);
+router.post("/:claimId/analyze", protect, analyzeClaimDocuments);
 router.get("/:claimId", protect, authorize("patient", "hospital", "insurer"), getDocumentsByClaim);
 
 export default router;

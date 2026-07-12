@@ -1,3 +1,5 @@
+import { useEffect, useRef } from "react";
+
 function ChatPanel({
   claimReady,
   isChatExpanded,
@@ -10,13 +12,21 @@ function ChatPanel({
   isSending,
   inputRef,
 }) {
+  const messagesEndRef = useRef(null);
   const documentsStatusLabel = claimReady ? "Documents Ready" : "Upload Required";
+
+  // Scroll the message container to the newest message whenever messages change.
+  // We scroll the sentinel element into view — this scrolls only inside
+  // .message-stream, never the browser page.
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
+  }, [messages]);
 
   return (
     <section className="panel chat-panel">
+      {/* Header — fixed height, never scrolls */}
       <div className="chat-header">
         <div>
-          <p className="eyebrow">Ask MediBridge AI</p>
           <h2>Ask MediBridge AI</h2>
           <p className="section-subtitle">Ask any question about your coverage, costs, and claims.</p>
         </div>
@@ -39,8 +49,10 @@ function ChatPanel({
         </div>
       </div>
 
+      {/* Body — flex:1, owns remaining height */}
       <div className="chat-body">
-        <div className="message-stream">
+        {/* Message stream — the ONLY scrollable part */}
+        <div className="message-stream" role="log" aria-live="polite" aria-label="Conversation">
           {!claimReady && messages.length === 0 ? (
             <div className="chat-empty-state">
               <span className="chat-empty-icon" aria-hidden="true">
@@ -58,8 +70,11 @@ function ChatPanel({
               </article>
             ))
           )}
+          {/* Sentinel — scrolled into view when new messages arrive */}
+          <div ref={messagesEndRef} aria-hidden="true" />
         </div>
 
+        {/* Composer — pinned at bottom, never scrolls */}
         <form className="composer" onSubmit={onSubmit}>
           <div className="composer-shell">
             <textarea
@@ -67,17 +82,25 @@ function ChatPanel({
               value={input}
               onChange={(event) => onInputChange(event.target.value)}
               placeholder="Ask about your coverage..."
-              rows={2}
+              rows={1}
               disabled={!claimReady || isSending}
             />
 
-            <button type="submit" className="send-button" disabled={isSending || !claimReady || !input.trim()} aria-label="Send message">
+            <button
+              type="submit"
+              className="send-button"
+              disabled={isSending || !claimReady || !input.trim()}
+              aria-label="Send message"
+            >
               <span aria-hidden="true">➤</span>
             </button>
           </div>
 
           {chatError && <p className="field-error chat-error">{chatError}</p>}
         </form>
+
+        {/* Disclaimer — pinned below composer */}
+        <p className="chat-disclaimer">AI-generated guidance. Verify important decisions with your insurer.</p>
       </div>
     </section>
   );
